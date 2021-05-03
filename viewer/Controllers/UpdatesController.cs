@@ -65,12 +65,14 @@ namespace viewer.Controllers
             using (var reader = new StreamReader(Request.Body, Encoding.UTF8))
             {
                 var jsonContent = await reader.ReadToEndAsync();
+                var headers = JsonConvert.SerializeObject(HttpContext.Request.Headers);
 
                 telemetryClient.TrackTrace(jsonContent, new Dictionary<string, string>()
                     {
                         ["step"] = "Just starting",
-                        ["type"] = HttpContext.Request.Headers["aeg-event-type"].FirstOrDefault()
-                }
+                        ["type"] = HttpContext.Request.Headers["aeg-event-type"].FirstOrDefault(),
+                        ["headers"] = headers
+                    }
                 );
 
                 // Check the event type.
