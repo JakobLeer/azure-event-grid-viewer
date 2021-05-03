@@ -98,6 +98,7 @@ namespace viewer.Controllers
                 JsonConvert.DeserializeObject<List<GridEvent<Dictionary<string, string>>>>(jsonContent)
                     .First();
 
+            /*
             await this._hubContext.Clients.All.SendAsync(
                 "gridupdate",
                 gridEvent.Id,
@@ -105,6 +106,7 @@ namespace viewer.Controllers
                 gridEvent.Subject,
                 gridEvent.EventTime.ToLongTimeString(),
                 jsonContent.ToString());
+            */
 
             // Retrieve the validation code and echo back.
             var validationCode = gridEvent.Data["validationCode"];
