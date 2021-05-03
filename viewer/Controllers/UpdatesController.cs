@@ -91,14 +91,16 @@ namespace viewer.Controllers
 
                     return await HandleGridEvents(jsonContent);
                 }
+                else
+                {
+                    telemetryClient.TrackTrace("Handling other event types", new Dictionary<string, string>()
+                        {
+                            ["Event type"] = HttpContext.Request.Headers["aeg-event-type"].FirstOrDefault()
+                        }
+                    );
 
-                telemetryClient.TrackTrace(jsonContent, new Dictionary<string, string>()
-                    {
-                        ["step"] = "Returning BadRequest"
-                    }
-                );
-
-                return BadRequest();                
+                    return Ok();
+                }
             }
         }
 
