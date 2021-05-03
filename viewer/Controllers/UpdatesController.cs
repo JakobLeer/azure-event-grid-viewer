@@ -1,15 +1,14 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.IO;
-using System.Threading.Tasks;
-using System.Net;
-using System.Text;
-using System.Net.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Microsoft.AspNetCore.SignalR;
-using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Microsoft.ApplicationInsights;
 using viewer.Hubs;
 using viewer.Models;
 
@@ -29,6 +28,8 @@ namespace viewer.Controllers
                "Notification";
 
         private readonly IHubContext<GridEventsHub> _hubContext;
+
+        private TelemetryClient telemetryClient = new TelemetryClient();
 
         #endregion
 
@@ -65,6 +66,12 @@ namespace viewer.Controllers
             {
                 var jsonContent = await reader.ReadToEndAsync();
 
+                telemetryClient.TrackTrace(jsonContent, new Dictionary<string, string>()
+                    {
+                        ["step"] = "Just starting"
+                    }
+                );
+
                 // Check the event type.
                 // Return the validation code if it's 
                 // a subscription validation request. 
@@ -83,6 +90,12 @@ namespace viewer.Controllers
 
                     return await HandleGridEvents(jsonContent);
                 }
+
+                telemetryClient.TrackTrace(jsonContent, new Dictionary<string, string>()
+                    {
+                        ["step"] = "Returning BadRequest"
+                    }
+                );
 
                 return BadRequest();                
             }
@@ -110,6 +123,13 @@ namespace viewer.Controllers
 
             // Retrieve the validation code and echo back.
             var validationCode = gridEvent.Data["validationCode"];
+
+            telemetryClient.TrackTrace(validationCode, new Dictionary<string, string>()
+                {
+                    ["step"] = "Handling validation"
+                }
+            );
+
             return new JsonResult(new
             {
                 validationResponse = validationCode
