@@ -68,8 +68,9 @@ namespace viewer.Controllers
 
                 telemetryClient.TrackTrace(jsonContent, new Dictionary<string, string>()
                     {
-                        ["step"] = "Just starting"
-                    }
+                        ["step"] = "Just starting",
+                        ["type"] = HttpContext.Request.Headers["aeg-event-type"].FirstOrDefault()
+                }
                 );
 
                 // Check the event type.
