@@ -67,10 +67,9 @@ namespace viewer.Controllers
                 var jsonContent = await reader.ReadToEndAsync();
                 var headers = JsonConvert.SerializeObject(HttpContext.Request.Headers);
 
-                telemetryClient.TrackTrace(jsonContent, new Dictionary<string, string>()
+                telemetryClient.TrackTrace($"Just starting: {HttpContext.Request.Headers["aeg-event-type"].FirstOrDefault()}", new Dictionary<string, string>()
                     {
-                        ["step"] = "Just starting",
-                        ["type"] = HttpContext.Request.Headers["aeg-event-type"].FirstOrDefault(),
+                        ["jsonContent"] = jsonContent,
                         ["headers"] = headers
                     }
                 );
@@ -95,11 +94,7 @@ namespace viewer.Controllers
                 }
                 else
                 {
-                    telemetryClient.TrackTrace("Handling other event types", new Dictionary<string, string>()
-                        {
-                            ["Event type"] = HttpContext.Request.Headers["aeg-event-type"].FirstOrDefault()
-                        }
-                    );
+                    telemetryClient.TrackTrace($">> Handling other event types: {HttpContext.Request.Headers["aeg -event-type"].FirstOrDefault()}");
 
                     return Ok();
                 }
@@ -127,11 +122,7 @@ namespace viewer.Controllers
             // Retrieve the validation code and echo back.
             var validationCode = gridEvent.Data["validationCode"];
 
-            telemetryClient.TrackTrace(validationCode, new Dictionary<string, string>()
-                {
-                    ["step"] = "Handling validation"
-                }
-            );
+            telemetryClient.TrackTrace($"Handling validation: {validationCode}");
 
             return new JsonResult(new
             {
