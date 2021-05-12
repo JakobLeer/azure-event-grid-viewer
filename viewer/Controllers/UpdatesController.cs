@@ -128,7 +128,9 @@ namespace viewer.Controllers
                 gridEvent.EventType,
                 gridEvent.Subject,
                 gridEvent.EventTime.ToLongTimeString(),
-                jsonContent.ToString()); _telemetryClient.TrackTrace($"Handling validation: {validationCode}");
+                jsonContent.ToString());
+            
+            _telemetryClient.TrackTrace($"Handling validation: {validationCode}");
 
             return new JsonResult(new
             {
