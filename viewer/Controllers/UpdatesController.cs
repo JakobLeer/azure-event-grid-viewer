@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.ApplicationInsights;
@@ -29,7 +30,7 @@ namespace viewer.Controllers
 
         private readonly IHubContext<GridEventsHub> _hubContext;
 
-        private TelemetryClient telemetryClient = new TelemetryClient();
+        private readonly TelemetryClient _telemetryClient = new TelemetryClient();
 
         #endregion
 
@@ -62,42 +63,40 @@ namespace viewer.Controllers
         [HttpPost]
         public async Task<IActionResult> Post()
         {
-            using (var reader = new StreamReader(Request.Body, Encoding.UTF8))
+            using var reader = new StreamReader(Request.Body, Encoding.UTF8);
+            var jsonContent = await reader.ReadToEndAsync();
+            var headers = JsonConvert.SerializeObject(HttpContext.Request.Headers);
+
+            _telemetryClient.TrackTrace($"Just starting: {HttpContext.Request.Headers["aeg-event-type"].FirstOrDefault()}", new Dictionary<string, string>()
+                {
+                    ["jsonContent"] = jsonContent,
+                    ["headers"] = headers
+                }
+            );
+
+            // Check the event type.
+            // Return the validation code if it's 
+            // a subscription validation request. 
+            if (EventTypeSubcriptionValidation)
             {
-                var jsonContent = await reader.ReadToEndAsync();
-                var headers = JsonConvert.SerializeObject(HttpContext.Request.Headers);
-
-                telemetryClient.TrackTrace($"Just starting: {HttpContext.Request.Headers["aeg-event-type"].FirstOrDefault()}", new Dictionary<string, string>()
-                    {
-                        ["jsonContent"] = jsonContent,
-                        ["headers"] = headers
-                    }
-                );
-
-                // Check the event type.
-                // Return the validation code if it's 
-                // a subscription validation request. 
-                if (EventTypeSubcriptionValidation)
+                return await HandleValidation(jsonContent);
+            }
+            else if (EventTypeNotification)
+            {
+                // Check to see if this is passed in using
+                // the CloudEvents schema
+                if (IsCloudEvent(jsonContent))
                 {
-                    return await HandleValidation(jsonContent);
+                    return await HandleCloudEvent(jsonContent);
                 }
-                else if (EventTypeNotification)
-                {
-                    // Check to see if this is passed in using
-                    // the CloudEvents schema
-                    if (IsCloudEvent(jsonContent))
-                    {
-                        return await HandleCloudEvent(jsonContent);
-                    }
 
-                    return await HandleGridEvents(jsonContent);
-                }
-                else
-                {
-                    telemetryClient.TrackTrace($">> Handling other event types: {HttpContext.Request.Headers["aeg -event-type"].FirstOrDefault()}");
+                return await HandleGridEvents(jsonContent);
+            }
+            else
+            {
+                _telemetryClient.TrackTrace($">> Handling other event types: {HttpContext.Request.Headers["aeg -event-type"].FirstOrDefault()}");
 
-                    return Ok();
-                }
+                return Ok();
             }
         }
 
@@ -111,18 +110,18 @@ namespace viewer.Controllers
                 JsonConvert.DeserializeObject<List<GridEvent<Dictionary<string, string>>>>(jsonContent)
                     .First();
 
-            this._hubContext.Clients.All.SendAsync(
-                "gridupdate",
-                gridEvent.Id,
-                gridEvent.EventType,
-                gridEvent.Subject,
-                gridEvent.EventTime.ToLongTimeString(),
-                jsonContent.ToString());
-
             // Retrieve the validation code and echo back.
             var validationCode = gridEvent.Data["validationCode"];
+            var validationUrl = gridEvent.Data["validationUrl"];
 
-            telemetryClient.TrackTrace($"Handling validation: {validationCode}");
+            using (var httpClient = new HttpClient())
+            {
+                using (await httpClient.GetAsync(validationUrl))
+                {
+                }
+            }
+
+            _telemetryClient.TrackTrace($"Handling validation: {validationCode}");
 
             return new JsonResult(new
             {
