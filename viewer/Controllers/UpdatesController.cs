@@ -122,7 +122,13 @@ namespace viewer.Controllers
                 }
             }
 
-            _telemetryClient.TrackTrace($"Handling validation: {validationCode}");
+            await this._hubContext.Clients.All.SendAsync(
+                "gridupdate",
+                gridEvent.Id,
+                gridEvent.EventType,
+                gridEvent.Subject,
+                gridEvent.EventTime.ToLongTimeString(),
+                jsonContent.ToString()); _telemetryClient.TrackTrace($"Handling validation: {validationCode}");
 
             return new JsonResult(new
             {
