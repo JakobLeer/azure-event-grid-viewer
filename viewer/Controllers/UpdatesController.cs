@@ -116,10 +116,8 @@ namespace viewer.Controllers
 
             using (var httpClient = new HttpClient())
             {
-                using (var result = await httpClient.GetAsync(validationUrl))
-                {
-                    _telemetryClient.TrackTrace($"Validating '{validationCode}' by GET, Status = {result.StatusCode}, URL = {validationUrl}");
-                }
+                using var result = await httpClient.GetAsync(validationUrl);
+                _telemetryClient.TrackTrace($"Validating '{validationCode}' by GET, Status = {result.StatusCode}, URL = {validationUrl}");
             }
 
             _telemetryClient.TrackTrace($"Handling validation: {validationCode}");
